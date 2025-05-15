@@ -1,0 +1,6 @@
+spring :
+  application :
+    name : open-ai
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
