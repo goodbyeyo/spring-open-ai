@@ -1,0 +1,4 @@
+Generate a list of korean movies directed by {director}.
+If the director is unknown, return null.
+한국 영화는 한글로 표기해줘.
+Each movie should include a title and release year and genre. {format}
