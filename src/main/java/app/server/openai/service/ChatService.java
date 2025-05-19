@@ -6,12 +6,15 @@ import app.server.openai.entity.Movie;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,8 +31,18 @@ public class ChatService {
 
     private final ChatClient chatClient;
 
-    public ChatService(ChatClient chatClient) {
+    private final ChatClient chatResourceClient;
+
+    private final ChatClient chatMemoryAdvisorClient;
+
+    private static final PrintStream utf8Out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
+
+    public ChatService(@Qualifier("chatBasicClient") ChatClient chatClient,
+                       @Qualifier("chatResourceClient") ChatClient chatResourceClient,
+                       @Qualifier("chatMemoryAdvisorClient") ChatClient chatMemoryAdvisorClient) {
         this.chatClient = chatClient;
+        this.chatResourceClient = chatResourceClient;
+        this.chatMemoryAdvisorClient = chatMemoryAdvisorClient;
     }
 
     public String simpleQuestion(String message) {
@@ -70,7 +83,7 @@ public class ChatService {
     }
 
     public Answer recipe(String foodName, String question) {
-        return chatClient.prompt()
+        return chatResourceClient.prompt()
                 .user(userSpec -> userSpec.text(foodTemplate)
                         .param("foodName", foodName)
                         .param("question", question))
@@ -93,7 +106,7 @@ public class ChatService {
     }
 
     public List<Movie> movie(String director) {
-        return chatClient.prompt()
+        return chatResourceClient.prompt()
                 .user(userSpec -> userSpec.text(movieTemplate)
                         .param("director", director)
                         .param("format", "json"))
@@ -102,23 +115,23 @@ public class ChatService {
     }
 
     public String getResponse(String message) {
-        return chatClient.prompt()
+        return chatMemoryAdvisorClient.prompt()
                 .user(message)
                 .call()
                 .content();
     }
 
     public void startChat() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter your message:");
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
+        utf8Out.println("Enter your message:");
         while (scanner.hasNextLine()) {
             String message = scanner.nextLine();
             if ("exit".equals(message)) {
-                System.out.println("Goodbye!");
+                utf8Out.println("Goodbye!");
                 break;
             }
             String response = getResponse(message);
-            System.out.println("ChatGPT: " + response);
+            utf8Out.println("ChatGPT: " + response);
         }
     }
 }
